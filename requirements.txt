@@ -1,0 +1,6 @@
+flask
+pillow
+requests
+imageio
+cairosvg
+gradio
