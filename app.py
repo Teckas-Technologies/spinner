@@ -23,13 +23,14 @@ def preprocess_image(image):
     new_image = new_image.resize((256, 256), Image.LANCZOS)
 
     random_emoji = random.choice(list(emojis.keys()))
+    emoji = emojis[random_emoji]["emoji"]
     emoji_path = os.path.join(emoji_dir, f"{random_emoji}.png")
     if os.path.exists(emoji_path):
         emoji_image = Image.open(emoji_path).convert("RGBA")
         emoji_image = emoji_image.resize((256, 256), Image.LANCZOS)
         new_image.paste(emoji_image, (0, 0), emoji_image)
 
-    return new_image, random_emoji
+    return new_image, random_emoji, emoji
 
 def create_gif(image1, image2, transition_type):
     frames = []
@@ -40,8 +41,8 @@ def create_gif(image1, image2, transition_type):
         img1 = image1.convert('RGBA')
         img2 = image2.convert('RGBA')
 
-        img1, random_emoji1 = preprocess_image(img1)
-        img2, random_emoji2 = preprocess_image(img2)
+        img1, random_emoji1, emoji1 = preprocess_image(img1)
+        img2, random_emoji2, emoji2 = preprocess_image(img2)
 
         size = (256, 256)
         img1 = img1.resize(size, Image.LANCZOS)
@@ -96,7 +97,7 @@ def create_gif(image1, image2, transition_type):
         frames[0].save(output, format='GIF', save_all=True, append_images=frames[1:], duration=duration, loop=0, optimize=True)
         output.seek(0)
 
-        return output
+        return output, emoji1, emoji2
 
     except Exception as e:
         return None
@@ -116,11 +117,11 @@ def generate_gif():
 
         transition_type = data.get("transition_type", "slide")
 
-        output = create_gif(image1, image2, transition_type)
+        output, emoji1, emoji2 = create_gif(image1, image2, transition_type)
 
         if output:
             base64_gif = base64.b64encode(output.getvalue()).decode('utf-8')
-            return jsonify({"gif": base64_gif})
+            return jsonify({"gif": base64_gif, "emoji1": emoji1, "emoji2": emoji2})
 
         return jsonify({"error": "Failed to create GIF"}), 500
 
