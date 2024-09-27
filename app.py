@@ -91,7 +91,7 @@ def create_gif(image1, image2, transition_type):
                 draw.line([center_x, center_y, end_x1, end_y1], fill=(0, 255, 0), width=3)
                 draw.line([center_x, center_y, end_x2, end_y2], fill=(0, 255, 0), width=3)
                 frame = frame.convert('P', palette=Image.ADAPTIVE)
-                frames.append(frame) 
+                frames.append(frame)
 
         output = io.BytesIO()
         frames[0].save(output, format='GIF', save_all=True, append_images=frames[1:], duration=duration, loop=0, optimize=True)
