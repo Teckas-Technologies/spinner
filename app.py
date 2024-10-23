@@ -1,11 +1,16 @@
 from flask import Flask, request, jsonify
+from getids import get_date_as_string, get_date_as_datetime
 from PIL import Image, ImageDraw
 import io
+import tempfile
 from math import cos, radians, sin
 import os
 import json
 import random
 import base64
+import numpy as np
+from moviepy.editor import ImageSequenceClip
+import logging
 
 # Load emojis from JSON file
 with open("emojis.json", encoding="utf-8") as f:
@@ -15,6 +20,13 @@ with open("emojis.json", encoding="utf-8") as f:
 emoji_dir = "emoji_pngs"
 
 app = Flask(__name__)
+
+def get_account_age(user_id):
+    # Get the account creation date as a datetime object
+    status, creation_date = get_date_as_datetime(user_id)
+    print("Account is approximately from", creation_date)
+    return creation_date
+
 
 def preprocess_image(image):
     size = max(image.size)
@@ -93,14 +105,37 @@ def create_gif(image1, image2, transition_type):
                 frame = frame.convert('P', palette=Image.ADAPTIVE)
                 frames.append(frame)
 
-        output = io.BytesIO()
-        frames[0].save(output, format='GIF', save_all=True, append_images=frames[1:], duration=duration, loop=0, optimize=True)
-        output.seek(0)
+        output_gif = io.BytesIO()
+        frames[0].save(output_gif, format='GIF', save_all=True, append_images=frames[1:], duration=duration, loop=0,
+                       optimize=True)
+        output_gif.seek(0)
 
-        return output, emoji1, emoji2
+        logging.debug("Converting frames to MP4 format.")
+        mp4_frames = [np.array(frame.convert('RGB')) for frame in frames]
+        clip = ImageSequenceClip(mp4_frames, fps=10)
+
+        # Use a temporary file to save the MP4
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_mp4:
+            temp_mp4_path = temp_mp4.name
+
+        clip.write_videofile(temp_mp4_path, codec="libx264", fps=10, preset="ultrafast", audio=False)
+
+        # Read the saved MP4 file into a BytesIO object
+        output_mp4 = io.BytesIO()
+        with open(temp_mp4_path, 'rb') as mp4_file:
+            output_mp4.write(mp4_file.read())
+        output_mp4.seek(0)
+
+        # Clean up the temporary file
+        os.remove(temp_mp4_path)
+
+        logging.debug("GIF and MP4 created successfully.")
+        return output_gif, output_mp4, emoji1, emoji2
 
     except Exception as e:
-        return None
+        logging.error(f"Error creating GIF/MP4: {e}")
+        return None, None, None, None
+
 
 @app.route("/api/generate_gif", methods=["POST"])
 def generate_gif():
@@ -115,21 +150,18 @@ def generate_gif():
         image1 = Image.open(io.BytesIO(image1_data))
         image2 = Image.open(io.BytesIO(image2_data))
 
-        transition_type = data.get("transition_type", "slide")
+        transition_type = data.get("transition_type", "")
 
-        output, emoji1, emoji2 = create_gif(image1, image2, transition_type)
+        output_gif, output_mp4, emoji1, emoji2 = create_gif(image1, image2, transition_type)
 
-        if output:
-            base64_gif = base64.b64encode(output.getvalue()).decode('utf-8')
-            return jsonify({"gif": base64_gif, "emoji1": emoji1, "emoji2": emoji2})
-
+        if output_gif and output_mp4:
+            base64_gif = base64.b64encode(output_gif.getvalue()).decode('utf-8')
+            base64_mp4 = base64.b64encode(output_mp4.getvalue()).decode('utf-8')
+            return jsonify({"gif": base64_gif, "video": base64_mp4, "emoji1": emoji1, "emoji2": emoji2})
         return jsonify({"error": "Failed to create GIF"}), 500
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-@app.route("/", methods=["GET"])
-def hello_world():
-    return "Hello, World!"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), debug=True)
