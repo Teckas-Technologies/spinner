@@ -13,6 +13,7 @@ from moviepy.editor import ImageSequenceClip
 import logging
 
 
+
 # Load emojis from JSON file
 with open("emojis.json", encoding="utf-8") as f:
     emojis = json.load(f)["emojis"]
