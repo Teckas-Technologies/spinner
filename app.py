@@ -137,6 +137,19 @@ def create_gif(image1, image2, transition_type):
         logging.error(f"Error creating GIF/MP4: {e}")
         return None, None, None, None
 
+@app.route("/", methods=["GET"])
+def hello_World():
+        return jsonify("Hello world"), 200
+
+
+@app.route('/api/airdrop/<int:user_id>', methods=['GET'])
+def airdrop(user_id):
+    try:
+        airdrop_amount = get_account_age(user_id)
+        return jsonify({'user_id': user_id, 'date': airdrop_amount}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route("/api/generate_gif", methods=["POST"])
 def generate_gif():
