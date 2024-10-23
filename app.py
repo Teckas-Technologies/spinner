@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from getids import get_date_as_string, get_date_as_datetime
+# from getids import get_date_as_string, get_date_as_datetime
 from PIL import Image, ImageDraw
 import io
 import tempfile
@@ -24,9 +24,9 @@ app = Flask(__name__)
 
 def get_account_age(user_id):
     # Get the account creation date as a datetime object
-    status, creation_date = get_date_as_datetime(user_id)
-    print("Account is approximately from", creation_date)
-    return creation_date
+    # status, creation_date = get_date_as_datetime(user_id)
+    # print("Account is approximately from", creation_date)
+    return "creation_date"
 
 
 def preprocess_image(image):
