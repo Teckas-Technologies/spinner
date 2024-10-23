@@ -12,6 +12,7 @@ import numpy as np
 from moviepy.editor import ImageSequenceClip
 import logging
 
+
 # Load emojis from JSON file
 with open("emojis.json", encoding="utf-8") as f:
     emojis = json.load(f)["emojis"]
@@ -164,4 +165,4 @@ def generate_gif():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 80)), debug=True)
